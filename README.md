@@ -182,6 +182,28 @@ builtin_tools = ["write_todos"]
 agent = create_deep_agent(..., builtin_tools=builtin_tools, ...)
 ```
 
+### `main_agent_tools` (Optional)
+
+By default, the main agent has access to all tools passed in the `tools` parameter. You can filter which of these tools the main agent has access to using `main_agent_tools`. This only affects the passed-in tools - built-in tools (filesystem, todos) and subagents are always available.
+
+This is useful when you want certain tools to only be available to subagents, not the main agent.
+
+Example:
+```python
+# Define tools
+def tool_a(): ...
+def tool_b(): ...
+def tool_c(): ...
+
+# Main agent only has access to tool_a and tool_b
+# Subagents will still have access to all tools
+agent = create_deep_agent(
+    tools=[tool_a, tool_b, tool_c],
+    instructions="...",
+    main_agent_tools=["tool_a", "tool_b"],  # tool_c only available to subagents
+)
+```
+
 #### Example: Using a Custom Model
 
 Here's how to use a custom model (like OpenAI's `gpt-oss` model via Ollama):
