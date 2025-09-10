@@ -112,17 +112,19 @@ def _create_task_tool(
         if subagent_type not in agents:
             return f"Error: invoked agent of type {subagent_type}, the only allowed types are {[f'`{k}`' for k in agents]}"
         sub_agent = agents[subagent_type]
-        state["messages"] = [{"role": "user", "content": description}]
-        result = await sub_agent.ainvoke(state)
+        # Hand off to the sub-agent graph so its internal steps stream.
+        # Emit a ToolMessage first to satisfy the originating tool_call.
         return Command(
+            graph=sub_agent,
             update={
-                "files": result.get("files", {}),
                 "messages": [
                     ToolMessage(
-                        result["messages"][-1].content, tool_call_id=tool_call_id
-                    )
-                ],
-            }
+                        content=f"Delegating to {subagent_type}: {description}",
+                        tool_call_id=tool_call_id,
+                    ),
+                    {"role": "user", "content": description},
+                ]
+            },
         )
 
     return task
@@ -154,17 +156,18 @@ def _create_sync_task_tool(
         if subagent_type not in agents:
             return f"Error: invoked agent of type {subagent_type}, the only allowed types are {[f'`{k}`' for k in agents]}"
         sub_agent = agents[subagent_type]
-        state["messages"] = [{"role": "user", "content": description}]
-        result = sub_agent.invoke(state)
+        # For sync tool usage, still perform a streaming handoff to preserve visibility.
         return Command(
+            graph=sub_agent,
             update={
-                "files": result.get("files", {}),
                 "messages": [
                     ToolMessage(
-                        result["messages"][-1].content, tool_call_id=tool_call_id
-                    )
-                ],
-            }
+                        content=f"Delegating to {subagent_type}: {description}",
+                        tool_call_id=tool_call_id,
+                    ),
+                    {"role": "user", "content": description},
+                ]
+            },
         )
 
     return task
