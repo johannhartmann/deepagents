@@ -1,4 +1,5 @@
 from deepagents.prompts import TASK_DESCRIPTION_PREFIX, TASK_DESCRIPTION_SUFFIX
+import logging
 from deepagents.state import DeepAgentState
 from langgraph.prebuilt import create_react_agent
 from langchain_core.tools import BaseTool
@@ -109,10 +110,13 @@ def _create_task_tool(
         state: Annotated[DeepAgentState, InjectedState],
         tool_call_id: Annotated[str, InjectedToolCallId],
     ):
+        logger = logging.getLogger(__name__)
+        logger.info("[deepagents.task] invoked: subagent_type=%s desc=%r", subagent_type, description)
         if subagent_type not in agents:
             return f"Error: invoked agent of type {subagent_type}, the only allowed types are {[f'`{k}`' for k in agents]}"
         sub_agent = agents[subagent_type]
         # Hand off to the sub-agent graph so its internal steps stream.
+        logger.info("[deepagents.task] returning Command(graph=sub_agent) for %s", subagent_type)
         # Emit a ToolMessage first to satisfy the originating tool_call.
         return Command(
             graph=sub_agent,
@@ -153,10 +157,13 @@ def _create_sync_task_tool(
         state: Annotated[DeepAgentState, InjectedState],
         tool_call_id: Annotated[str, InjectedToolCallId],
     ):
+        logger = logging.getLogger(__name__)
+        logger.info("[deepagents.task.sync] invoked: subagent_type=%s desc=%r", subagent_type, description)
         if subagent_type not in agents:
             return f"Error: invoked agent of type {subagent_type}, the only allowed types are {[f'`{k}`' for k in agents]}"
         sub_agent = agents[subagent_type]
         # For sync tool usage, still perform a streaming handoff to preserve visibility.
+        logger.info("[deepagents.task.sync] returning Command(graph=sub_agent) for %s", subagent_type)
         return Command(
             graph=sub_agent,
             update={
